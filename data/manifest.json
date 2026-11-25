@@ -1,0 +1,137 @@
+{
+  "width": 2282,
+  "height": 2556,
+  "crs": "EPSG:32750",
+  "transform": [
+    10.0,
+    0.0,
+    688190.0,
+    0.0,
+    -10.0,
+    9071330.0
+  ],
+  "bounds4326": [
+    118.70917882850513,
+    -8.628752770805367,
+    118.91750937361687,
+    -8.396704353109987
+  ],
+  "corners4326": [
+    [
+      118.70917882850513,
+      -8.397657909547746
+    ],
+    [
+      118.91635944660861,
+      -8.396704353109987
+    ],
+    [
+      118.91750937361687,
+      -8.627772593439847
+    ],
+    [
+      118.71020459173995,
+      -8.628752770805367
+    ]
+  ],
+  "mask": "mask.png",
+  "pixelHa": 0.01,
+  "treeClass": 2,
+  "invalidClasses": [
+    0,
+    10
+  ],
+  "validClasses": [
+    1,
+    2,
+    4,
+    5,
+    7,
+    8,
+    9,
+    11
+  ],
+  "years": [
+    {
+      "year": 2017,
+      "file": "2017.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2017.tif",
+      "sourceETag": "f521a197020039e4d9cda250af6ff815-9",
+      "sha256": "74d68e1adf61889ad252c2a0a07625d29d33c8b1010e85519976fa31c83f97f8",
+      "bytes": 87659
+    },
+    {
+      "year": 2018,
+      "file": "2018.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2018.tif",
+      "sourceETag": "fe490b3b593386a3ae9fa8f6156b58b7-9",
+      "sha256": "9968c3024d4314b43468d1f9081619334ceb37180615ccb24f61045471eaf165",
+      "bytes": 82639
+    },
+    {
+      "year": 2019,
+      "file": "2019.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2019.tif",
+      "sourceETag": "fe07b148f13d4a12b8760cb44d9d8eca-9",
+      "sha256": "642b0138156e218604a28c633329ea34a20be8af0c28c8c089e5d1299954ab99",
+      "bytes": 83627
+    },
+    {
+      "year": 2020,
+      "file": "2020.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2020.tif",
+      "sourceETag": "95e0fbcd27ac32e8b150de98a55c920c-9",
+      "sha256": "b72702275d787d33716663f91bce1f8d4fed67c0986a9a754ccc73f0247f406e",
+      "bytes": 84047
+    },
+    {
+      "year": 2021,
+      "file": "2021.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2021.tif",
+      "sourceETag": "5ee859dca5436dd595032d3cd490174f-9",
+      "sha256": "7e765ae5b1deae5e0013e54182fbf55cc081041f2b7cc99a69792450c9af7702",
+      "bytes": 89869
+    },
+    {
+      "year": 2022,
+      "file": "2022.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2022.tif",
+      "sourceETag": "03a0cafb078bb3839da4b3390e8e1979-9",
+      "sha256": "5453e3fd0c2328d0548b873f667a588ff0f7aea54f9d01d64f088dd2dcec82a9",
+      "bytes": 86555
+    },
+    {
+      "year": 2023,
+      "file": "2023.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2023.tif",
+      "sourceETag": "57a856299bf0f437e8b4526674d496f8-6",
+      "sha256": "269db984570b08dbd8ce110b12040344ef4bc8abf44234a824d5ff1ed61e5e8f",
+      "bytes": 87160
+    },
+    {
+      "year": 2024,
+      "file": "2024.png",
+      "source": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/50L_2024.tif",
+      "sourceETag": "816118d5335217c0ede495e18fbac9c4-6",
+      "sha256": "0367c0cce1cca2f7aac82225a326dc67658781c11561bb326bcf46d9d68bea89",
+      "bytes": 90800
+    },
+    {
+      "year": 2025,
+      "file": "2025.png",
+      "source": "https://lulctimeseries.blob.core.windows.net/lulctimeseriesv003/lc2025/50L_20250101-20251231.tif",
+      "sourceETag": "0x8DEA09437B41157",
+      "sha256": "7dc92a1c19cd6b168809a14c08909a5c454afa2679cee1ad0f260ee37f7717b1",
+      "bytes": 81090
+    }
+  ],
+  "boundary": "boundary.geojson",
+  "boundarySha256": "36f88943ea3299120a7712d74bf0c70f3d7bb1bac153f796e9e9bc42517499b0",
+  "attribution": "Impact Observatory, Microsoft, and Esri",
+  "archive": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/",
+  "supplementaryArchive": "https://lulctimeseries.blob.core.windows.net/lulctimeseriesv003",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "summary": "summary.json",
+  "methodVersion": "native-grid-v1",
+  "processedUtc": "2026-11-25T13:16:28.361342+00:00"
+}
