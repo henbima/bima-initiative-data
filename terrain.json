@@ -1,0 +1,46 @@
+{
+  "file": "terrain.jpg",
+  "crs": "EPSG:32750",
+  "bounds": [
+    665080,
+    9037480,
+    734120,
+    9079520
+  ],
+  "width": 1726,
+  "height": 1051,
+  "pixelSize": 40,
+  "transform": [
+    40,
+    0,
+    665080,
+    0,
+    -40,
+    9079520
+  ],
+  "sources": [
+    {
+      "title": "Mapzen Terrain Tiles",
+      "url": "https://registry.opendata.aws/terrain-tiles/",
+      "attribution": "Mapzen Terrain Tiles. SRTM and GMTED2010 courtesy of the U.S. Geological Survey. Global ETOPO1 terrain data from the U.S. National Oceanic and Atmospheric Administration.",
+      "rights": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md"
+    },
+    {
+      "title": "Permukaan air 2024",
+      "url": "https://ic.imagery1.arcgis.com/arcgis/rest/services/Sentinel2_10m_LandCover/ImageServer",
+      "attribution": "Impact Observatory, Microsoft, and Esri",
+      "rights": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ],
+  "acquiredUtc": "2026-11-25",
+  "terrariumZoom": 12,
+  "tileRangeXYZ": [
+    3396,
+    2143,
+    3403,
+    2147
+  ],
+  "minElevationM": -30,
+  "maxElevationM": 1616,
+  "cartographicWaterFraction": 0.1799
+}

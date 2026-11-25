@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#153e34" />
+    <meta
+      name="description"
+      content="Bandingkan tutupan pohon dari tahun ke tahun di daerah aliran sungai yang mengalir ke Kota Bima."
+    />
+    <title>Observatorium Bima · Bima Initiative</title>
+    <link rel="icon" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <a href="#peta" class="brand"
+        ><img src="icon.svg" alt="" /><span>Bima <b>Initiative</b></span></a
+      >
+      <nav aria-label="Navigasi utama">
+        <a href="#peta">Peta lahan</a><a href="#banjir">Arsip banjir</a
+        ><a href="#metode">Metode</a>
+      </nav>
+    </header>
+    <main>
+      <section id="peta" class="view">
+        <div class="heading">
+          <div>
+            <p class="kicker">OBSERVATORIUM LINGKUNGAN</p>
+            <h1>Tutupan lahan Bima</h1>
+            <p class="lead">
+              Perubahan tahunan di daerah tangkapan air yang mengalir ke Kota
+              Bima.
+            </p>
+          </div>
+          <a class="source-link" href="#metode">Sumber &amp; metode</a>
+        </div>
+        <div class="workspace">
+          <aside class="side">
+            <div class="block">
+              <h2>Wilayah pengamatan</h2>
+              <strong class="region">DAS Rontu</strong>
+              <p class="minor" id="areaHint">Memuat batas analisis…</p>
+            </div>
+            <div class="block">
+              <h2>Periode perbandingan</h2>
+              <div class="fields">
+                <label>Tahun awal<select id="start"></select></label
+                ><label>Tahun akhir<select id="end"></select></label>
+              </div>
+            </div>
+            <div class="block">
+              <h2>Perubahan tutupan pohon</h2>
+              <p class="major" id="net">…</p>
+              <p class="minor">Perubahan bersih pada area terbaca</p>
+              <dl class="counts">
+                <div>
+                  <dt><i class="dot loss"></i>Beralih dari pohon</dt>
+                  <dd id="lost">…</dd>
+                </div>
+                <div>
+                  <dt><i class="dot gain"></i>Beralih menjadi pohon</dt>
+                  <dd id="gained">…</dd>
+                </div>
+              </dl>
+            </div>
+            <div class="block">
+              <h2>Luas tutupan pohon per tahun</h2>
+              <div id="chart"></div>
+              <p class="minor" id="chartnote">
+                Luas kelas pohon pada area terbaca tiap tahun.
+              </p>
+            </div>
+            <button class="csv" id="csv" disabled>Unduh ringkasan CSV</button>
+          </aside>
+          <div>
+            <section class="atlas">
+              <div class="mapbar">
+                <h2>Peta pengamatan</h2>
+                <div class="switch" aria-label="Tampilan peta">
+                  <button id="change" aria-pressed="true">Perubahan</button
+                  ><button id="swipe" aria-pressed="false">Bandingkan</button>
+                </div>
+              </div>
+              <div class="mapframe" id="frame">
+                <canvas
+                  id="map"
+                  tabindex="0"
+                  aria-label="Peta interaktif. Gunakan tombol arah untuk menggeser dan tombol tambah atau kurang untuk memperbesar atau memperkecil."
+                ></canvas>
+                <div id="stamp">PETA TUTUPAN LAHAN</div>
+                <div class="maptools">
+                  <button id="plus" aria-label="Perbesar peta">+</button
+                  ><button id="minus" aria-label="Perkecil peta">−</button
+                  ><button id="fit" aria-label="Lihat seluruh wilayah">
+                    ⌖
+                  </button>
+                </div>
+                <div id="pin" hidden></div>
+                <div id="scale"></div>
+                <div id="mapStatus" role="status">
+                  Memuat peta dan data satelit…
+                </div>
+              </div>
+              <div class="dragbar" id="dragbar" hidden>
+                <span id="yl"></span
+                ><label class="sr" for="divider">Posisi pembanding</label
+                ><input
+                  id="divider"
+                  type="range"
+                  min="2"
+                  max="98"
+                  value="50"
+                /><span id="yr"></span>
+              </div>
+              <div class="legend" id="legend"></div>
+            </section>
+            <div class="mapmeta">
+              <span id="coverage">Cakupan sedang dimuat</span
+              ><span>Sentinel-2 · piksel 10 m</span>
+            </div>
+            <p class="minor maphelp">
+              Ketuk peta untuk membaca kelas di titik tersebut. Geser untuk
+              menjelajahi wilayah.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section id="banjir" class="view" hidden>
+        <div class="heading">
+          <div>
+            <p class="kicker">ARSIP KEJADIAN</p>
+            <h1>Banjir Kota Bima</h1>
+            <p class="lead">2 Februari 2021 · seluruh waktu dalam WITA</p>
+          </div>
+        </div>
+        <div id="event-body"></div>
+      </section>
+      <section id="metode" class="view" hidden>
+        <div class="heading">
+          <div>
+            <p class="kicker">SUMBER TERBUKA</p>
+            <h1>Data dan metode</h1>
+            <p class="lead">
+              Asal data, cara membaca angka, dan batas pengamatan.
+            </p>
+          </div>
+        </div>
+        <div class="reading" id="method"></div>
+      </section>
+    </main>
+    <footer>
+      <span>Bima Initiative</span
+      ><span>Observatorium Lingkungan · Bima, NTB</span>
+    </footer>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
