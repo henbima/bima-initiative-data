@@ -1,0 +1,39 @@
+{
+  "checked": "2026-11-25",
+  "method": "Irisan dan gabungan kedua poligon asli dihitung dalam proyeksi Lambert Azimuthal Equal Area lokal. Persentase memakai luas hasil proyeksi ini; luas katalog dicatat terpisah.",
+  "areaCRS": "+proj=laea +lat_0=-8.5 +lon_0=118.8 +datum=WGS84 +units=m +no_defs",
+  "working": {
+    "name": null,
+    "id": "DAS420446",
+    "objectId": 4779,
+    "layer": "Batas_DAS_KLHK_se_Indonesia",
+    "url": "https://services-ap1.arcgis.com/zddIc5NlxDyZbzsT/ArcGIS/rest/services/Batas_DAS_KLHK_se_Indonesia/FeatureServer/0/query?objectIds=4779&outFields=FID,nama_das,luas_ha,kd_das,wil_kerja&outSR=4326&returnGeometry=true&f=geojson",
+    "responseSha256": "36f88943ea3299120a7712d74bf0c70f3d7bb1bac153f796e9e9bc42517499b0",
+    "catalogHa": 25874.17,
+    "geometryHa": 25869.3194
+  },
+  "reference": {
+    "name": "RONTU",
+    "id": "4-179-2597",
+    "featureId": 2597,
+    "category": "Daerah Aliran Sungai",
+    "source": "Ministry of Forestry",
+    "year": 2024,
+    "dataset": "projects/mapbiomas-territories/assets/TERRITORIES-STAGING/INDONESIA/WORKSPACE/WATERSHED/WATERSHED_v1",
+    "publicHeaders": {
+      "tenant-id": "mapbiomas"
+    },
+    "recordUrl": "https://prd.plataforma.mapbiomas.org/api/v1/indonesia/territories/4-179-2597",
+    "geometryUrl": "https://prd.plataforma.mapbiomas.org/api/v1/indonesia/territories/geometry?territoryId=4-179-2597&simplify=false",
+    "geometryResponseSha256": "73771f96f85f23042887efb7166f18f714f3d1fd23b5b5a6ba7fa66a08bf7691",
+    "geometryFile": "rontu-mapbiomas.geojson",
+    "geometryFileSha256": "ce4c0263bd2334b9db49fd25ffe0d27f0d433910a0e3ef3f4a3127cda2ee72a1",
+    "reportedHa": 26057.59905438439,
+    "geometryHa": 26058.5043
+  },
+  "intersectionHa": 25679.1456,
+  "unionHa": 26248.6782,
+  "intersectionShareOfWorking": 0.99264867,
+  "intersectionShareOfReference": 0.98544204,
+  "intersectionOverUnion": 0.97830243
+}

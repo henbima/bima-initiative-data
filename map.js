@@ -1,16 +1,4 @@
-const classes = {
-  0: ["Tak terbaca", "#bec5bf"],
-  1: ["Air", "#629ab0"],
-  2: ["Pohon", "#255942"],
-  4: ["Vegetasi tergenang", "#6bb2a0"],
-  5: ["Tanaman budidaya", "#e9bd69"],
-  7: ["Terbangun", "#ba7263"],
-  8: ["Tanah terbuka", "#c8a77d"],
-  9: ["Salju / es", "#e6eff0"],
-  10: ["Awan", "#c1c5c5"],
-  11: ["Rumput / semak", "#a5b782"],
-};
-export const className = (n) => classes[n]?.[0] || "Tak terbaca";
+import { spatialGrid } from "./detail.js";
 const changeKeys = [
   ["Beralih dari pohon", "#d35d38"],
   ["Beralih menjadi pohon", "#007b67"],
@@ -35,11 +23,37 @@ function plane(w, h) {
 function lookupColor(hex) {
   return [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
 }
-const colors = Object.fromEntries(
-  Object.entries(classes).map(([id, v]) => [id, lookupColor(v[1])]),
-);
 const changeColors = changeKeys.map((row) => lookupColor(row[1]));
-export async function createMap(cfg, json, getImage) {
+function nativePlane(im, w, h) {
+  const stripe = plane(w, Math.min(h, 120)),
+    g = stripe.getContext("2d", { willReadFrequently: true });
+  const out = new Uint8Array(w * h);
+  for (let j = 0; j < h; j += 120) {
+    const n = Math.min(120, h - j);
+    g.drawImage(im, 0, j, w, n, 0, 0, w, n);
+    const d = g.getImageData(0, 0, w, n).data;
+    for (let i = 0; i < w * n; i++) out[j * w + i] = d[i * 4];
+  }
+  return out;
+}
+export async function createMap(cfg, json, getImage, profile) {
+  const colors = Object.fromEntries(
+    Object.entries(profile.colors).map(([id, c]) => [id, lookupColor(c)]),
+  );
+  const valid = new Set(cfg.validClasses),
+    forest = new Set(cfg.forestClasses ?? [2]);
+  const className = (n) => profile.names[n] ?? "Tak terbaca";
+  const keysChange = changeKeys.map(([n, c]) => [
+    n.replace("pohon", profile.short),
+    c,
+  ]);
+  const references = await json("petak.json");
+  let photos = null,
+    photoLoad = null;
+  let grid = [],
+    selected = null,
+    full = [],
+    tileCache = new Map();
   const canvas = document.querySelector("#map"),
     ctx = canvas.getContext("2d"),
     frame = document.querySelector("#frame"),
@@ -59,7 +73,9 @@ export async function createMap(cfg, json, getImage) {
   const maskCanvas = plane(rw, rh),
     mc = maskCanvas.getContext("2d", { willReadFrequently: true });
   mc.imageSmoothingEnabled = false;
-  mc.drawImage(await getImage(cfg.mask), 0, 0, rw, rh);
+  const nativeMask = await getImage(cfg.mask),
+    fullMask = nativePlane(nativeMask, w, h);
+  mc.drawImage(nativeMask, 0, 0, rw, rh);
   const mask = mc.getImageData(0, 0, rw, rh).data;
   let years = [],
     rasters = [],
@@ -114,11 +130,40 @@ export async function createMap(cfg, json, getImage) {
       if (paint[i]) {
         ctx.imageSmoothingEnabled = false;
         ctx.globalAlpha = mode === "change" ? 0.84 : 0.83;
-        ctx.drawImage(paint[i], 0, 0, w, h);
+        if (zoom < 3 || ratio === 1) ctx.drawImage(paint[i], 0, 0, w, h);
+        else {
+          const colStart = Math.max(0, Math.floor(-k[0] / size / 256)),
+            colEnd = Math.min(
+              Math.ceil(w / 256),
+              Math.ceil((width - k[0]) / size / 256),
+            );
+          const rowStart = Math.max(0, Math.floor(-k[1] / size / 256)),
+            rowEnd = Math.min(
+              Math.ceil(h / 256),
+              Math.ceil((height - k[1]) / size / 256),
+            );
+          for (let ty = rowStart; ty < rowEnd; ty++)
+            for (let tx = colStart; tx < colEnd; tx++)
+              ctx.drawImage(tile(i, tx, ty), tx * 256, ty * 256);
+        }
         ctx.globalAlpha = 1;
       }
     }
-    if (mode === "change") overlay(0);
+    if (mode === "photos") {
+      if (photos) {
+        const [u, v] = rasterXY(688190, 9071330);
+        const paintPhoto = (im) =>
+          ctx.drawImage(im, u, v, 22820 / sx, 25560 / sx);
+        ctx.imageSmoothingEnabled = zoom < 4;
+        paintPhoto(photos[0]);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect((width * divider - k[0]) / size, -1e7, 1e7, 2e7);
+        ctx.clip();
+        paintPhoto(photos[1]);
+        ctx.restore();
+      }
+    } else if (mode === "change") overlay(0);
     else {
       overlay(1);
       ctx.save();
@@ -138,6 +183,15 @@ export async function createMap(cfg, json, getImage) {
       });
       ctx.closePath();
       ctx.stroke();
+    }
+    if (selected) {
+      const [x, y] = rasterXY(selected.west, selected.south + 1000);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 5 / size;
+      ctx.strokeRect(x, y, 1000 / sx, 1000 / sx);
+      ctx.strokeStyle = "#3a2538";
+      ctx.lineWidth = 2.5 / size;
+      ctx.strokeRect(x, y, 1000 / sx, 1000 / sx);
     }
     ctx.restore();
     ctx.lineJoin = "round";
@@ -165,7 +219,7 @@ export async function createMap(cfg, json, getImage) {
       ctx.strokeText(p.name, x + 5, y);
       ctx.fillText(p.name, x + 5, y);
     }
-    if (mode === "swipe") {
+    if (mode === "swipe" || mode === "photos") {
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -203,20 +257,43 @@ export async function createMap(cfg, json, getImage) {
     document
       .querySelector("#swipe")
       .setAttribute("aria-pressed", String(mode === "swipe"));
-    document.querySelector("#dragbar").hidden = mode !== "swipe";
-    const keys =
-      mode === "change"
-        ? changeKeys
-        : [
-            classes[1],
-            classes[2],
-            classes[4],
-            classes[5],
-            classes[7],
-            classes[8],
-            classes[11],
-            classes[0],
-          ];
+    const showingPhoto = mode === "photos";
+    document
+      .querySelector("#photos")
+      .setAttribute("aria-pressed", String(showingPhoto));
+    document.querySelector("#dragbar").hidden = mode === "change";
+    document.querySelector("#stamp").textContent = showingPhoto
+      ? "SENTINEL-2 · WARNA ALAMI"
+      : "DAS RONTU · " + sx + " M";
+    document.querySelector("#yl").textContent = showingPhoto
+      ? "17 Sep 2017"
+      : (years[0] ?? "");
+    document.querySelector("#yr").textContent = showingPhoto
+      ? "31 Agu 2025"
+      : (years[1] ?? "");
+    if (showingPhoto) {
+      legend.textContent = photos
+        ? "Citra 10 m · kiri 17 September 2017, kanan 31 Agustus 2025. Tanggal foto tetap."
+        : "Memuat dua citra Sentinel-2.";
+      if (!photoLoad)
+        photoLoad = Promise.all([
+          bitmap("optik/before.jpg"),
+          bitmap("optik/after.jpg"),
+        ])
+          .then((ims) => {
+            photos = ims;
+            if (mode === "photos") setMode("photos");
+          })
+          .catch(() => {
+            photoLoad = null;
+            if (mode === "photos")
+              legend.textContent =
+                "Citra gagal dimuat. Tekan Citra asli untuk mencoba lagi.";
+          });
+      schedule();
+      return;
+    }
+    const keys = mode === "change" ? keysChange : profile.legend;
     legend.replaceChildren(
       ...keys.map(([label, color]) => {
         const s = document.createElement("span"),
@@ -227,6 +304,55 @@ export async function createMap(cfg, json, getImage) {
       }),
     );
     schedule();
+  }
+  function paintPixel(out, i, a, b, layer, x, y) {
+    const missing = !valid.has(a) || !valid.has(b);
+    const cls = missing
+      ? 4
+      : forest.has(a)
+        ? forest.has(b)
+          ? 2
+          : 0
+        : forest.has(b)
+          ? 1
+          : 3;
+    const code = layer === 1 ? a : b;
+    const color = layer === 0 ? changeColors[cls] : colors[code] || colors[0];
+    const hatch =
+      (layer === 0 ? missing : !valid.has(code)) && (x + y) % 9 < 3 ? 52 : 0;
+    out[i] = color[0] - hatch;
+    out[i + 1] = color[1] - hatch;
+    out[i + 2] = color[2] - hatch;
+    out[i + 3] = layer === 0 && cls > 1 ? 155 : 240;
+  }
+  function tile(layer, tx, ty) {
+    const key = layer + "-" + tx + "-" + ty;
+    if (tileCache.has(key)) return tileCache.get(key);
+    const x = tx * 256,
+      y = ty * 256,
+      tw = Math.min(256, w - x),
+      th = Math.min(256, h - y);
+    const c = plane(tw, th),
+      g = c.getContext("2d"),
+      pixels = g.createImageData(tw, th);
+    for (let j = 0; j < th; j++)
+      for (let i = 0; i < tw; i++) {
+        const z = (j + y) * w + x + i;
+        if (fullMask[z])
+          paintPixel(
+            pixels.data,
+            (j * tw + i) * 4,
+            full[0][z],
+            full[1][z],
+            layer,
+            x + i,
+            y + j,
+          );
+      }
+    g.putImageData(pixels, 0, 0);
+    tileCache.set(key, c);
+    if (tileCache.size > 80) tileCache.delete(tileCache.keys().next().value);
+    return c;
   }
   async function setYears(a, b) {
     const revision = ++token;
@@ -243,34 +369,30 @@ export async function createMap(cfg, json, getImage) {
       pixels = layers.map((c) => c.getContext("2d").createImageData(rw, rh));
     for (let i = 0; i < mask.length; i += 4) {
       if (!mask[i]) continue;
-      const av = samples[0][i],
-        bv = samples[1][i],
-        missing = [0, 10].includes(av) || [0, 10].includes(bv);
-      const ci = missing ? 4 : av === 2 ? (bv === 2 ? 2 : 0) : bv === 2 ? 1 : 3;
-      const cs = [
-        changeColors[ci],
-        colors[av] || colors[0],
-        colors[bv] || colors[0],
-      ];
-      for (let j = 0; j < 3; j++) {
-        const d = pixels[j].data,
-          c = cs[j];
-        const noData = j === 0 ? missing : [0, 10].includes(j === 1 ? av : bv);
-        const pixel = i / 4;
-        const hatch = noData && ((pixel % rw) + Math.floor(pixel / rw)) % 9 < 3 ? 52 : 0;
-        d[i] = c[0] - hatch;
-        d[i + 1] = c[1] - hatch;
-        d[i + 2] = c[2] - hatch;
-        d[i + 3] = j === 0 && ci > 1 ? 155 : 240;
-      }
+      for (let j = 0; j < 3; j++)
+        paintPixel(
+          pixels[j].data,
+          i,
+          samples[0][i],
+          samples[1][i],
+          j,
+          (i / 4) % rw,
+          Math.floor(i / 4 / rw),
+        );
     }
+    full = images.map((im) => nativePlane(im, w, h));
+    grid = spatialGrid(full[0], full[1], fullMask, cfg, references);
+    tileCache.clear();
+    selected = null;
     layers.forEach((c, i) => c.getContext("2d").putImageData(pixels[i], 0, 0));
     years = [a.year, b.year];
     rasters = images;
     paint = layers;
     pin.hidden = true;
-    document.querySelector("#yl").textContent = a.year;
-    document.querySelector("#yr").textContent = b.year;
+    if (mode !== "photos") {
+      document.querySelector("#yl").textContent = a.year;
+      document.querySelector("#yr").textContent = b.year;
+    }
     schedule();
     return true;
   }
@@ -287,11 +409,23 @@ export async function createMap(cfg, json, getImage) {
   document.querySelector("#minus").onclick = () => magnify(1 / 1.5);
   document.querySelector("#fit").onclick = () => {
     zoom = 1;
+    selected = null;
+    const share = document.querySelector("#mapShare");
+    if (share.href) {
+      const u = new URL(share.href);
+      u.searchParams.delete("petak");
+      share.href = u.href;
+    }
     ox = oy = 0;
     pin.hidden = true;
     schedule();
   };
   document.querySelector("#change").onclick = () => setMode("change");
+  document.querySelector("#photos").onclick = () => setMode("photos");
+  document.querySelector("#seePhotos").onclick = () => {
+    setMode("photos");
+    frame.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   document.querySelector("#swipe").onclick = () => setMode("swipe");
   const slider = document.querySelector("#divider");
   function slide(v) {
@@ -306,7 +440,7 @@ export async function createMap(cfg, json, getImage) {
     one.drawImage(im, i, j, 1, 1, 0, 0, 1, 1);
     return one.getImageData(0, 0, 1, 1).data[0];
   }
-  const nativeMask = await getImage(cfg.mask);
+
   function pick(x, y) {
     if (!rasters.length) return;
     const [x0, y0] = screen(0, 0),
@@ -317,9 +451,11 @@ export async function createMap(cfg, json, getImage) {
       pin.textContent = "Di luar batas analisis";
       return;
     }
-    pin.textContent = years
-      .map((year, n) => year + " · " + className(value(rasters[n], i, j)))
-      .join("  /  ");
+    pin.textContent =
+      (mode === "photos" ? "Klasifikasi tahunan · " : "") +
+      years
+        .map((year, n) => year + " · " + className(value(rasters[n], i, j)))
+        .join("  /  ");
   }
   let drag = null;
   canvas.onpointerdown = (e) => {
@@ -332,7 +468,8 @@ export async function createMap(cfg, json, getImage) {
       ox,
       oy,
       divider:
-        mode === "swipe" && Math.abs(e.clientX - r.left - width * divider) < 18,
+        mode !== "change" &&
+        Math.abs(e.clientX - r.left - width * divider) < 18,
     };
     canvas.setPointerCapture(e.pointerId);
   };
@@ -386,5 +523,33 @@ export async function createMap(cfg, json, getImage) {
   };
   new ResizeObserver(schedule).observe(frame);
   setMode("change");
-  return { setYears, schedule };
+  function focus(g) {
+    if (!width || !height) draw();
+    selected = g;
+    zoom = 5;
+    const [x, y] = rasterXY(g.west + 500, g.south + 500);
+    ox = -(x - w / 2) * base * zoom;
+    oy = -(y - h / 2) * base * zoom;
+    pin.textContent =
+      "Petak " +
+      g.id +
+      " · " +
+      g.reference +
+      " · " +
+      (g.loss * cfg.pixelHa).toLocaleString("id-ID", {
+        maximumFractionDigits: 2,
+      }) +
+      " ha keluar" +
+      (g.lat != null ? " · " + g.lat.toFixed(5) + ", " + g.lon.toFixed(5) : "");
+    pin.hidden = false;
+    schedule();
+  }
+  return {
+    setYears,
+    schedule,
+    focus,
+    get grid() {
+      return grid;
+    },
+  };
 }

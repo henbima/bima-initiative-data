@@ -1,0 +1,101 @@
+{
+  "crs": "EPSG:32750",
+  "bounds": [
+    688190,
+    9045770,
+    711010,
+    9071330
+  ],
+  "pixelSizeM": 10,
+  "width": 2282,
+  "height": 2556,
+  "method": "Mosaik dua tile pada lintasan yang sama. Komposit warna alami bawaan Sentinel-2 Level-2A (kanal B4, B3, B2). Jendela piksel 10 m dipotong pada grid UTM 50S dan dikompresi menjadi JPEG. Awan dipertahankan. Mutu dinilai di dalam batas kerja Rontu memakai SCL 20 m. Kelas 4/5/6 menyatakan vegetasi/tanah/air. Kelas 3/8/9/10 menyatakan bayangan awan atau awan/sirus. Kelas lainnya masuk kategori lain/tanpa data.",
+  "attribution": "Contains modified Copernicus Sentinel data (2017 and 2025). Distributed via Element 84 Earth Search.",
+  "terms": "https://dataspace.copernicus.eu/terms-and-conditions",
+  "scenes": [
+    {
+      "date": "2017-09-17",
+      "file": "before.jpg",
+      "quality": {
+        "clearPct": 98.1363,
+        "cloudShadowPct": 0.1403,
+        "otherOrMissingPct": 1.7235,
+        "clearFullRectanglePct": 98.3647,
+        "classHistogram": [
+          0,
+          0,
+          17998,
+          932,
+          1377954,
+          1151121,
+          10111,
+          26595,
+          1780,
+          769,
+          148,
+          0
+        ]
+      },
+      "items": [
+        {
+          "id": "S2A_50LQR_20170917_0_L2A",
+          "datetimeUtc": "2017-09-17T02:26:33.675000Z",
+          "url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2A_50LQR_20170917_0_L2A",
+          "rgb": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/50/L/QR/2017/9/S2A_50LQR_20170917_0_L2A/TCI.tif",
+          "scl": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/50/L/QR/2017/9/S2A_50LQR_20170917_0_L2A/SCL.tif"
+        },
+        {
+          "id": "S2A_50LPR_20170917_0_L2A",
+          "datetimeUtc": "2017-09-17T02:26:33.675000Z",
+          "url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2A_50LPR_20170917_0_L2A",
+          "rgb": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/50/L/PR/2017/9/S2A_50LPR_20170917_0_L2A/TCI.tif",
+          "scl": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/50/L/PR/2017/9/S2A_50LPR_20170917_0_L2A/SCL.tif"
+        }
+      ],
+      "bytes": 928870,
+      "sha256": "5612e44910eb55dc2f06b7f739bdde5d44cd2f40025058b41456762e0f4e45a0"
+    },
+    {
+      "date": "2025-08-31",
+      "file": "after.jpg",
+      "quality": {
+        "clearPct": 96.3421,
+        "cloudShadowPct": 3.1073,
+        "otherOrMissingPct": 0.5507,
+        "clearFullRectanglePct": 95.4662,
+        "classHistogram": [
+          0,
+          0,
+          3055,
+          0,
+          1379043,
+          1103855,
+          9864,
+          11193,
+          4,
+          0,
+          80394,
+          0
+        ]
+      },
+      "items": [
+        {
+          "id": "S2B_T50LPR_20250831T022436_L2A",
+          "datetimeUtc": "2025-08-31T02:30:08.244000Z",
+          "url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a/items/S2B_T50LPR_20250831T022436_L2A",
+          "rgb": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/50/L/PR/2025/8/S2B_T50LPR_20250831T022436_L2A/TCI.tif",
+          "scl": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/50/L/PR/2025/8/S2B_T50LPR_20250831T022436_L2A/SCL.tif"
+        },
+        {
+          "id": "S2B_T50LQR_20250831T022436_L2A",
+          "datetimeUtc": "2025-08-31T02:30:05.537000Z",
+          "url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a/items/S2B_T50LQR_20250831T022436_L2A",
+          "rgb": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/50/L/QR/2025/8/S2B_T50LQR_20250831T022436_L2A/TCI.tif",
+          "scl": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/50/L/QR/2025/8/S2B_T50LQR_20250831T022436_L2A/SCL.tif"
+        }
+      ],
+      "bytes": 978444,
+      "sha256": "3ef12eaac67cf0f6e6c0f056bcc7ef2e4617d0eae0d71171bc8c1bbc66c648b3"
+    }
+  ]
+}

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#153e34" />
     <meta
       name="description"
-      content="Bandingkan tutupan pohon dari tahun ke tahun di daerah aliran sungai yang mengalir ke Kota Bima."
+      content="Jelajahi perubahan hutan DAS Rontu sejak 1985 dan luas pertanian, sawah, serta permukiman di 41 kelurahan Kota Bima sejak 1990."
     />
     <title>Observatorium Bima · Bima Initiative</title>
     <link rel="icon" href="icon.svg" />
@@ -18,8 +18,10 @@
         ><img src="icon.svg" alt="" /><span>Bima <b>Initiative</b></span></a
       >
       <nav aria-label="Navigasi utama">
-        <a href="#peta">Peta lahan</a><a href="#banjir">Arsip banjir</a
-        ><a href="#metode">Metode</a>
+        <a href="#peta">Peta DAS</a>
+        <a href="#kota">Kota &amp; kelurahan</a>
+        <a href="#banjir">Banjir</a>
+        <a href="#metode">Metode</a>
       </nav>
     </header>
     <main>
@@ -29,11 +31,32 @@
             <p class="kicker">OBSERVATORIUM LINGKUNGAN</p>
             <h1>Tutupan lahan Bima</h1>
             <p class="lead">
-              Perubahan tahunan di daerah tangkapan air yang mengalir ke Kota
-              Bima.
+              Telusuri perubahan hutan dan penggunaan lahan di DAS Rontu, dari
+              hulu hingga Kota Bima.
             </p>
           </div>
           <a class="source-link" href="#metode">Sumber &amp; metode</a>
+        </div>
+        <div class="sourcepick" aria-label="Pilih seri satelit">
+          <a id="tabOld" href="?seri=arsip#peta"
+            ><strong>Riwayat hutan</strong
+            ><span>1985–2022 · Landsat · 30 m</span></a
+          >
+          <a id="tabNew" href="?seri=detail#peta"
+            ><strong>Tutupan pohon terkini</strong
+            ><span id="recentSpan">2017–2025 · Sentinel-2 · 10 m</span></a
+          >
+        </div>
+        <p class="scopeLink">
+          Mencari kelurahan tertentu?
+          <a href="#kota">Lihat statistik Kota Bima, 1990–2025 →</a>
+        </p>
+        <div class="intro">
+          <strong id="detailTitle">Perubahan tutupan lahan</strong>
+          <p id="finding" aria-live="polite">
+            Menghitung luas perubahan pada wilayah DAS Rontu.
+          </p>
+          <p class="minor" id="timeNote"></p>
         </div>
         <div class="workspace">
           <aside class="side">
@@ -50,22 +73,28 @@
               </div>
             </div>
             <div class="block">
-              <h2>Perubahan tutupan pohon</h2>
+              <h2 id="metricTitle">Perubahan bersih</h2>
               <p class="major" id="net">…</p>
-              <p class="minor">Perubahan bersih pada area terbaca</p>
+              <p class="minor"><span id="deltaPct"></span></p>
               <dl class="counts">
                 <div>
-                  <dt><i class="dot loss"></i>Beralih dari pohon</dt>
+                  <dt>
+                    <i class="dot loss"></i
+                    ><span id="lostLabel">Keluar dari kelas</span>
+                  </dt>
                   <dd id="lost">…</dd>
                 </div>
                 <div>
-                  <dt><i class="dot gain"></i>Beralih menjadi pohon</dt>
+                  <dt>
+                    <i class="dot gain"></i
+                    ><span id="gainLabel">Masuk ke kelas</span>
+                  </dt>
                   <dd id="gained">…</dd>
                 </div>
               </dl>
             </div>
             <div class="block">
-              <h2>Luas tutupan pohon per tahun</h2>
+              <h2 id="chartTitle">Luas per pengamatan</h2>
               <div id="chart"></div>
               <p class="minor" id="chartnote">
                 Luas kelas pohon pada area terbaca tiap tahun.
@@ -79,7 +108,8 @@
                 <h2>Peta pengamatan</h2>
                 <div class="switch" aria-label="Tampilan peta">
                   <button id="change" aria-pressed="true">Perubahan</button
-                  ><button id="swipe" aria-pressed="false">Bandingkan</button>
+                  ><button id="swipe" aria-pressed="false">Bandingkan</button
+                  ><button id="photos" aria-pressed="false">Citra asli</button>
                 </div>
               </div>
               <div class="mapframe" id="frame">
@@ -117,13 +147,240 @@
             </section>
             <div class="mapmeta">
               <span id="coverage">Cakupan sedang dimuat</span
-              ><span>Sentinel-2 · piksel 10 m</span>
+              ><span id="resolution"></span>
             </div>
             <p class="minor maphelp">
               Ketuk peta untuk membaca kelas di titik tersebut. Geser untuk
               menjelajahi wilayah.
+              <a id="mapShare" href="#peta">Tautan ke tampilan ini</a>.
             </p>
           </div>
+        </div>
+        <div class="analysis">
+          <article class="panel geography">
+            <h2>Di mana perubahan terbesar?</h2>
+            <p>
+              Pilih petak untuk memperbesar peta. Urutan mengikuti luas yang
+              keluar dari kelas pada periode pilihan. Nama tempat menunjukkan
+              jarak dan arah ke pusat petak.
+            </p>
+            <div id="gridTable"></div>
+            <button type="button" class="textbutton" id="gridCSV">
+              Unduh semua petak (CSV)
+            </button>
+          </article>
+          <article class="panel">
+            <h2>Lahan itu berubah menjadi apa?</h2>
+            <p>
+              Setiap baris menunjukkan kelas pada tahun akhir dan porsinya
+              terhadap seluruh luas yang keluar.
+            </p>
+            <div id="lossTable"></div>
+            <details>
+              <summary>Kelas asal lahan yang masuk</summary>
+              <div id="gainTable"></div>
+            </details>
+            <button type="button" class="textbutton" id="transCSV">
+              Unduh semua transisi (CSV)
+            </button>
+          </article>
+          <article class="panel">
+            <h2>Kapan perubahan terjadi?</h2>
+            <p id="intervalNote"></p>
+            <details>
+              <summary>Lihat luas setiap tahun pengamatan</summary>
+              <div id="yearTable"></div>
+            </details>
+            <button type="button" class="textbutton" id="yearCSV">
+              Unduh deret waktu (CSV)
+            </button>
+          </article>
+          <article class="panel">
+            <h2>Apakah kedua satelit sepakat?</h2>
+            <p>
+              Untuk wilayah dan periode 2017–2022 yang sama, arah hasilnya
+              berbeda.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Produk dan kelas</th>
+                  <th>Perubahan bersih</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GLC · hutan</td>
+                  <td>−1.649,25 ha</td>
+                </tr>
+                <tr>
+                  <td>Esri · pohon</td>
+                  <td>+447,16 ha</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="minor">
+              Kelas, resolusi dan cara klasifikasinya berbeda. Bandingkan tahun
+              di dalam satu seri. Besarnya perubahan nyata di lapangan masih
+              memiliki ketidakpastian.
+            </p>
+          </article>
+        </div>
+        <article class="panel photoNote">
+          <div>
+            <h2>Citra asli sebelum dan sesudah</h2>
+            <p>
+              Dua lintasan Sentinel-2 memperlihatkan permukaan sekitar Bima pada
+              17 September 2017 dan 31 Agustus 2025, dengan resolusi 10 m. Geser
+              pembatas pada peta untuk membandingkan lokasi yang sama.
+            </p>
+            <button type="button" class="textbutton" id="seePhotos">
+              Bandingkan citra pada peta
+            </button>
+            <p class="minor">
+              Awan dan bayangannya mencakup 0,14% dan 3,11% wilayah DAS pada
+              masing-masing tanggal. Warna permukaan juga dipengaruhi musim dan
+              kelembapan.
+            </p>
+            <p class="minor">
+              Contains modified Copernicus Sentinel data (2017 and 2025).
+              Distributed via Element 84 Earth Search.
+              <a href="optik/optics.json">Metadata dan citra sumber</a>
+            </p>
+          </div>
+          <div class="photopair">
+            <a href="optik/before.jpg"
+              ><img
+                loading="lazy"
+                src="optik/before.jpg"
+                alt="Citra warna alami 17 September 2017"
+              />17 Sep 2017 ↗</a
+            ><a href="optik/after.jpg"
+              ><img
+                loading="lazy"
+                src="optik/after.jpg"
+                alt="Citra warna alami 31 Agustus 2025"
+              />31 Agu 2025 ↗</a
+            >
+          </div>
+        </article>
+        <article class="panel study">
+          <h2>Padolo dan Malayu dalam studi lokal</h2>
+          <p>
+            Ismoyojati, Sujono, dan Jayadi membandingkan luas kelas hutan di dua
+            sub-DAS. Mereka memakai peta dan batas daerah tangkapan studi
+            sendiri.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Sub-DAS</th>
+                <th>1996</th>
+                <th>2006</th>
+                <th>2016</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Padolo</th>
+                <td>10.128 ha</td>
+                <td>8.080 ha</td>
+                <td>4.305 ha</td>
+              </tr>
+              <tr>
+                <th>Malayu</th>
+                <td>1.997 ha</td>
+                <td>1.298 ha</td>
+                <td>575 ha</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="minor">
+            Luas dikonversi dari km² pada Tabel 4 dan 5.
+            <a href="https://scholarhub.ui.ac.id/jglitrop/vol2/iss2/2/"
+              >Baca penelitian dan lihat peta sub-DAS</a
+            >
+          </p>
+        </article>
+      </section>
+      <section id="kota" class="view" hidden>
+        <div class="heading">
+          <div>
+            <p class="kicker">WILAYAH ADMINISTRASI</p>
+            <h1>Kota Bima per kelurahan</h1>
+            <p class="lead">
+              Bandingkan tutupan lahan setiap tahun sejak 1990 untuk
+              <span id="cityCount">wilayah Kota Bima</span>.
+            </p>
+          </div>
+        </div>
+        <p class="scopeLink examples">
+          Contoh perubahan 1990–2025 ·
+          <a href="?wilayah=5272041005&amp;kelas=18#kota">Pertanian di Ntobo</a>
+          ·
+          <a href="?wilayah=5272031004&amp;kelas=10#kota"
+            >Vegetasi nonhutan di Kolo</a
+          >
+          ·
+          <a href="?wilayah=5272011001&amp;kelas=24#kota"
+            >Permukiman di Paruga</a
+          >
+        </p>
+        <div class="panel cityFilters">
+          <label>Kecamatan<select id="cityDistrict"></select></label
+          ><label>Kelurahan<select id="cityWard"></select></label
+          ><label>Kelas lahan<select id="cityClass"></select></label
+          ><label>Tahun awal<select id="cityFrom"></select></label
+          ><label>Tahun akhir<select id="cityTo"></select></label>
+        </div>
+        <div class="intro">
+          <strong id="cityTitle">Kota Bima</strong>
+          <p id="cityStory">Memuat statistik MapBiomas.</p>
+          <p class="minor" id="cityExtent"></p>
+        </div>
+        <div class="analysis">
+          <article class="panel">
+            <h2>Luas menurut kelas</h2>
+            <div id="cityCover"></div>
+            <p class="minor">
+              Tanda ↳ menunjukkan subkelas yang sudah dihitung dalam kelas
+              induknya. Selisih luas saja tidak menunjukkan lahan mana yang
+              berpindah kelas.
+            </p>
+          </article>
+          <article class="panel">
+            <h2 id="cityRankTitle">Sebaran perubahan</h2>
+            <p id="cityRankSub"></p>
+            <div id="cityRank"></div>
+          </article>
+          <article class="panel">
+            <h2>Riwayat kelas terpilih</h2>
+            <div id="citybars" class="chartbars" role="img"></div>
+            <div id="cityChartEnds" class="chartends"></div>
+            <details>
+              <summary>Lihat angka tiap tahun</summary>
+              <div id="cityYears"></div>
+            </details>
+            <button class="textbutton" id="cityCSV">
+              Unduh semua kelas wilayah ini (CSV)
+            </button>
+          </article>
+          <article class="panel">
+            <h2>Sumber dan wilayah</h2>
+            <p>
+              MapBiomas Indonesia Koleksi 5 menyediakan statistik tahunan
+              1990–2025, resolusi 30 m. Semua tahun mengikuti batas administrasi
+              2023 pada platform. Hasil Kota Bima dan DAS Rontu mencakup wilayah
+              yang berbeda.
+            </p>
+            <p class="minor">
+              Diakses <span id="cityDate"></span> ·
+              <a id="citySource">Platform MapBiomas</a> ·
+              <a href="https://landy.mapbiomas.id/id/termsofuse">CC BY-SA</a> ·
+              <a href="kota/city.json">Arsip data</a>
+            </p>
+            <a id="cityLink" class="textbutton">Tautan ke pilihan ini</a>
+          </article>
         </div>
       </section>
       <section id="banjir" class="view" hidden>
@@ -131,9 +388,57 @@
           <div>
             <p class="kicker">ARSIP KEJADIAN</p>
             <h1>Banjir Kota Bima</h1>
-            <p class="lead">2 Februari 2021 · seluruh waktu dalam WITA</p>
+            <p class="lead">
+              Kejadian terdokumentasi pada 2016 dan 2021 · waktu setempat WITA
+            </p>
           </div>
         </div>
+        <article class="panel study">
+          <h2>21 dan 23 Desember 2016</h2>
+          <p>
+            Dua kali banjir bandang melanda Kota Bima. Laporan Humanitarian
+            Forum Indonesia tanggal 28 Desember mencatat 33 kelurahan terdampak
+            di lima kecamatan.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Kecamatan</th>
+                <th>Kelurahan terdampak</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Raba</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Mpunda</td>
+                <td>9</td>
+              </tr>
+              <tr>
+                <td>Rasanae Barat</td>
+                <td>6</td>
+              </tr>
+              <tr>
+                <td>Rasanae Timur</td>
+                <td>4</td>
+              </tr>
+              <tr>
+                <td>Asakota</td>
+                <td>4</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="minor">
+            Angka mengikuti cakupan laporan saat itu.
+            <a
+              href="https://www.humanitarianforum.or.id/wp-content/uploads/2021/09/SitRep-HFI-1-Banjir-di-Bima-2016.pdf"
+              >Laporan situasi, hlm. 1–2</a
+            >
+          </p>
+        </article>
+        <h2 class="eventDate">2 Februari 2021</h2>
         <div id="event-body"></div>
       </section>
       <section id="metode" class="view" hidden>

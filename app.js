@@ -1,3 +1,5 @@
+import { profileFor } from "./series.js";
+import { showDetails } from "./detail.js";
 import { createMap } from "./map.js";
 const $ = (id) => document.getElementById(id);
 const num = (n, d = 2) =>
@@ -5,14 +7,18 @@ const num = (n, d = 2) =>
     minimumFractionDigits: d,
     maximumFractionDigits: d,
   }).format(n);
-const ha = (n) => num(n * 0.01) + " ha";
+const ha = (n) => num(n * cfg.pixelHa) + " ha";
 const read = async (path) => {
   const r = await fetch(path, { signal: AbortSignal.timeout(18000) });
   if (!r.ok) throw Error("HTTP " + r.status);
   return r.json();
 };
 const repo = "https://raw.githubusercontent.com/henbima/bima-initiative-data/";
-let active = "data/",
+const historical =
+  new URLSearchParams(location.search).get("seri") !== "detail";
+let profile,
+  initialPair = true;
+let active = historical ? "historis/" : "data/",
   cfg,
   rows,
   atlas,
@@ -20,9 +26,10 @@ let active = "data/",
   images = new Map(),
   version = 0,
   latestChecked = "";
+let cityTask;
 function nav() {
   let id = location.hash.slice(1);
-  if (!["peta", "banjir", "metode"].includes(id)) id = "peta";
+  if (!["peta", "kota", "banjir", "metode"].includes(id)) id = "peta";
   for (const section of document.querySelectorAll(".view"))
     section.hidden = section.id !== id;
   for (const a of document.querySelectorAll("nav a")) {
@@ -32,6 +39,14 @@ function nav() {
     else a.removeAttribute("aria-current");
   }
   if (id === "peta") atlas?.schedule();
+  if (id === "kota" && !cityTask)
+    cityTask = import("./city.js")
+      .then((m) => m.initCity(read))
+      .catch(() => {
+        $("cityStory").textContent =
+          "Statistik gagal dimuat. Buka ulang halaman untuk mencoba lagi.";
+        cityTask = null;
+      });
 }
 window.addEventListener("hashchange", nav);
 nav();
@@ -52,6 +67,15 @@ function fillYears(initial = false, fromStart = true) {
   $("end").replaceChildren(...options(ys.slice(1)));
   $("start").value = a;
   $("end").value = b;
+}
+function mapUrl(a, b, grid) {
+  const u = new URL(location.pathname, location.origin);
+  u.searchParams.set("seri", historical ? "arsip" : "detail");
+  u.searchParams.set("dari", a);
+  u.searchParams.set("ke", b);
+  if (grid) u.searchParams.set("petak", grid.id);
+  u.hash = "peta";
+  $("mapShare").href = u.href;
 }
 function getImage(path) {
   const url = active + path;
@@ -91,12 +115,15 @@ function chart(a, b) {
     mx = Math.max(...annual);
   const bars = document.createElement("div");
   bars.className = "chartbars";
+  bars.style.gridTemplateColumns =
+    "repeat(" + (ys.at(-1) - ys[0] + 1) + ",1fr)";
   const vals = [];
   ys.forEach((y, i) => {
     const bar = document.createElement("span");
     bar.className = "bar" + ([a, b].includes(y) ? " sel" : "");
     bar.style.height = (annual[i] / mx) * 100 + "%";
     bar.title = y + " · " + ha(annual[i]);
+    bar.style.gridColumn = String(y - ys[0] + 1);
     bars.append(bar);
     vals.push(bar.title);
   });
@@ -118,6 +145,8 @@ async function renderComparison() {
     b = +$("end").value,
     row = rows[a + "-" + b];
   $("csv").disabled = true;
+  $("gridTable").closest(".analysis").inert = true;
+  $("finding").textContent = "Memuat perbandingan " + a + "–" + b + ".";
   $("mapStatus").hidden = false;
   $("mapStatus").textContent = "Memuat perbandingan…";
   try {
@@ -145,6 +174,34 @@ async function renderComparison() {
       b +
       " · " +
       ha(row.treeAfterPixels);
+    const totals = atlas.grid.reduce(
+      (t, g) => [t[0] + g.loss, t[1] + g.gain, t[2] + g.valid],
+      [0, 0, 0],
+    );
+    if (
+      totals[0] !== row.lossPixels ||
+      totals[1] !== row.gainPixels ||
+      totals[2] !== row.validPixels
+    )
+      throw Error("Jumlah piksel tidak cocok");
+    const focus = (g) => {
+      atlas.focus(g);
+      mapUrl(a, b, g);
+    };
+    mapUrl(a, b, null);
+    if (initialPair && location.hash !== "#kota") {
+      const gridId = new URLSearchParams(location.search).get("petak");
+      const chosen = atlas.grid.find((t) => t.id === gridId);
+      if (chosen) focus(chosen);
+    }
+    initialPair = false;
+    $("gridTable").closest(".analysis").inert = false;
+    showDetails(cfg, rows, a, b, profile, atlas.grid, focus, (x, y) => {
+      $("start").value = x;
+      $("end").value = y;
+      renderComparison().catch(onError);
+      $("frame").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
     chart(a, b);
     $("mapStatus").hidden = true;
     $("csv").disabled = false;
@@ -158,6 +215,9 @@ function csv() {
   const { a, b, row: r } = pair,
     data = [
       [
+        "seri",
+        "kelas",
+        "resolusi_m",
         "wilayah",
         "kode_das",
         "tahun_awal",
@@ -165,8 +225,8 @@ function csv() {
         "luas_wilayah_grid_ha",
         "area_valid_bersama_ha",
         "cakupan_persen",
-        "pohon_awal_ha",
-        "pohon_akhir_ha",
+        "kelas_awal_ha",
+        "kelas_akhir_ha",
         "keluar_ha",
         "masuk_ha",
         "neto_ha",
@@ -176,11 +236,16 @@ function csv() {
         "sumber_akhir",
       ],
       [
+        cfg.seriesId,
+        profile.short,
+        cfg.transform[0],
         "Rontu",
         "DAS420446",
         a,
         b,
-        ...[r.insidePixels, r.validPixels].map((n) => (n * 0.01).toFixed(2)),
+        ...[r.insidePixels, r.validPixels].map((n) =>
+          (n * cfg.pixelHa).toFixed(2),
+        ),
         ((r.validPixels / r.insidePixels) * 100).toFixed(5),
         ...[
           r.treeBeforePixels,
@@ -188,9 +253,9 @@ function csv() {
           r.lossPixels,
           r.gainPixels,
           r.netPixels,
-        ].map((n) => (n * 0.01).toFixed(2)),
+        ].map((n) => (n * cfg.pixelHa).toFixed(2)),
         cfg.boundarySha256,
-        cfg.processedUtc,
+        cfg.processedUtc ?? "",
         ...[a, b].map((yr) => cfg.years.find((y) => y.year === yr).source),
       ],
     ];
@@ -201,7 +266,7 @@ function csv() {
   );
   const link = document.createElement("a");
   link.href = url;
-  link.download = "Rontu-" + a + "-" + b + ".csv";
+  link.download = "Rontu-" + cfg.seriesId + "-" + a + "-" + b + ".csv";
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
@@ -225,23 +290,67 @@ function method() {
  <article><h2>Kelas tutupan pohon</h2><p>Klasifikasi tahunan Sentinel-2 berasal dari Impact Observatory, Microsoft, dan Esri. Kelas pohon dapat mencakup berbagai jenis vegetasi berpohon. Perubahan kelas antar-tahun bisa dipengaruhi kondisi citra dan klasifikasi. Peta ini mengukur perubahan yang teramati. Penetapan pembalakan, pelaku, atau penyebab banjir memerlukan bukti tambahan.</p><a href="https://registry.opendata.aws/io-lulc/">Arsip asli</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></article>
  <article><h2>Cara menghitung luas</h2><p>Grid UTM 50S memakai piksel 10 × 10 m atau 0,01 ha. Piksel tepi masuk jika pusatnya berada di dalam poligon. Awan dan data kosong dikeluarkan dari kedua tahun. Angka bersih adalah luas masuk ke kelas pohon dikurangi luas keluar. Grafik tahunan menggunakan area valid masing-masing tahun.</p><p>Relief dasar berasal dari Mapzen Terrain Tiles, dengan data elevasi USGS dan NOAA. <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">Atribusi relief</a>. Nama lokasi berasal dari <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0).</p></article>
  <article><h2>Pembaruan dan unduhan</h2><p>Seri yang tersedia <b>${years[0]}–${years.at(-1)}</b>. Halaman utama menyediakan CSV per pasangan tahun. Pemeriksaan arsip bulanan mencatat rilis baru dan revisi sumber. <span id="checked"></span></p><a id="manifestlink">Manifest data aktif</a> · <a href="https://github.com/henbima/bima-initiative-data">Data dan proses pengolahan</a></article>`;
+  const articles = $("method").querySelectorAll("article");
+  const check = document.createElement("p");
+  check.innerHTML =
+    'Sebagai pembanding, batas bernama RONTU pada katalog DAS 2024 yang disajikan MapBiomas mencakup sekitar 99,26% wilayah kerja. Luas batas pembanding tercatat 26.057,60 ha. Semua perhitungan pada peta memakai poligon kerja yang sama. <a href="reproduce/boundary/rontu-boundary-check.json">Hasil uji tumpang tindih dan sumber geometri</a>.';
+  articles[0].append(check);
+  articles[1].innerHTML = historical
+    ? '<h2>Kelas hutan Landsat</h2><p>GLC_FCS30D v2, karya Liangyun Liu, Xiao Zhang, dan Zhehua Li, memakai sepuluh kelas hutan terbuka dan rapat (kode 51–92). Mangrove, rawa berpohon dan kebun berkayu memiliki kelas tersendiri. Vegetasi jarang adalah kode 150. Kelas tujuan memberi petunjuk tutupan permukaan. Jenis tanaman, pelaku dan penyebab perubahan memerlukan bukti tambahan.</p><a href="https://zenodo.org/records/15063683">Arsip sumber</a> · <a href="https://essd.copernicus.org/articles/16/1353/2024/">Metode ilmiah</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>'
+    : articles[1].innerHTML;
+  articles[2].querySelector("p").textContent =
+    "Grid UTM 50S memakai piksel " +
+    cfg.transform[0] +
+    " × " +
+    cfg.transform[0] +
+    " m (" +
+    num(cfg.pixelHa) +
+    " ha). Piksel masuk jika pusatnya berada dalam poligon DAS. Perbandingan memakai lokasi valid di kedua tahun. Perubahan bersih adalah luas masuk dikurangi luas keluar. Tabel tahunan memakai semua piksel valid tiap tahun. Petak berukuran 1 × 1 km dengan titik acuan permukiman dari GeoNames. Petak tepi hanya menghitung bagian di dalam DAS.";
+  if (historical)
+    articles[3].querySelector("p").innerHTML =
+      'Arsip tetap versi 2 mencakup 26 pengamatan. Tahun 1985, 1990 dan 1995 merupakan pusat jendela lima tahun. Data tahunan tersedia pada 2000–2022. <a href="https://github.com/henbima/bima-initiative-data/tree/observatorium/reproduce/historical">Kode pengolahan dan verifikasi</a>.';
   $("manifestlink").href = active + "manifest.json";
-  $("checked").textContent = latestChecked
-    ? "Pemeriksaan terakhir " + latestChecked + "."
-    : "";
+  if ($("checked"))
+    $("checked").textContent = latestChecked
+      ? "Pemeriksaan terakhir " + latestChecked + "."
+      : "";
 }
 async function setup(base, conf) {
   active = base;
   cfg = conf;
+  cfg.seriesId = historical ? "GLC-FCS30D" : "Esri";
+  profile = profileFor(cfg, historical);
+  $(historical ? "tabOld" : "tabNew").setAttribute("aria-current", "true");
+  $("resolution").textContent = profile.source;
+  $("stamp").textContent = "DAS RONTU · " + cfg.transform[0] + " M";
+  $("metricTitle").textContent = "Perubahan bersih kelas " + profile.short;
+  $("chartTitle").textContent = "Luas " + profile.short + " per pengamatan";
+  $("lostLabel").textContent = "Keluar dari kelas " + profile.short;
+  $("gainLabel").textContent = "Masuk ke kelas " + profile.short;
+  $("timeNote").textContent = historical
+    ? "1985, 1990 dan 1995 mewakili jendela lima tahun. Pengamatan tersedia setiap tahun mulai 2000."
+    : "Satu peta klasifikasi per tahun. Setiap piksel mewakili 10 × 10 meter.";
+  if (!historical)
+    $("recentSpan").textContent =
+      cfg.years[0].year + "–" + cfg.years.at(-1).year + " · Sentinel-2 · 10 m";
   rows = await read(active + cfg.summary);
   fillYears(true);
+  if (initialPair) {
+    const q = new URLSearchParams(location.search),
+      a = +q.get("dari"),
+      b = +q.get("ke");
+    if (a < b && rows[a + "-" + b]) {
+      $("start").value = a;
+      $("end").value = b;
+    }
+  }
   method();
-  if (!atlas) atlas = await createMap(cfg, read, getImage);
+  if (!atlas) atlas = await createMap(cfg, read, getImage, profile);
   await renderComparison();
 }
 async function main() {
-  const local = await read("data/manifest.json");
-  await setup("data/", local);
+  const local = await read(active + "manifest.json");
+  await setup(active, local);
   $("start").onchange = () => {
     fillYears(false, true);
     renderComparison().catch(onError);
@@ -251,6 +360,7 @@ async function main() {
     renderComparison().catch(onError);
   };
   $("csv").onclick = csv;
+  if (historical) return;
   try {
     const s = await read(repo + "main/status.json");
     if (!/^[a-f0-9]{40}$/.test(s.dataCommit)) return;
@@ -265,6 +375,9 @@ async function main() {
       remote = await read(base + "manifest.json");
     if (
       remote.boundarySha256 !== local.boundarySha256 ||
+      remote.validClasses.join() !== local.validClasses.join() ||
+      remote.treeClass !== local.treeClass ||
+      remote.pixelHa !== local.pixelHa ||
       remote.width !== local.width ||
       remote.height !== local.height ||
       remote.years.length < local.years.length ||
